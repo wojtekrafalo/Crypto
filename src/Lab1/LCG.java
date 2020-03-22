@@ -111,6 +111,7 @@ public class LCG {
 
     /**
      * This solution tried to find a tuple of variables: (x0, a, c, modulo) for given string.
+     * But it doesn't work yet.
      * Three first elements of the input string are enough. After that we check the rest of the string.
      * To find such solution, we have to solve a set of equations.
      * @param str String to be checked. Elements of an array must be separated by '_' sign.
