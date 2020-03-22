@@ -6,6 +6,7 @@ package Lab1;
 public class Lab1Main {
     /**
      * If you want to test first Lab list, just run this method. I predicted a bit of the cases.
+     *
      * @param args You don't need this argument.
      */
     public static void main(String[] args) {
@@ -25,6 +26,9 @@ public class Lab1Main {
             GLIBC generator2 = new GLIBC(1000, 1);
             String s2 = generator2.generateString();
             System.out.println(s2);
+
+            if (GLIBC.isGLIBC(s2,SolutionClass.Cycle))
+                System.out.println("Should have returned true.");
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
