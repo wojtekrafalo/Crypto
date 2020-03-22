@@ -1,3 +1,6 @@
+import Lab1.LCG;
+import Lab1.SolutionClass;
+
 public class Main {
     public static void main(String[] args) {
         try {
