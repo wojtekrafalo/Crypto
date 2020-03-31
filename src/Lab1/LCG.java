@@ -1,14 +1,21 @@
 package Lab1;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
-public class LCG {
-    int x0;
-    int a;
-    int modulo;
-    int c;
+public class LCG extends Generator{
+    long x0;
+    long a;
+    long modulo;
+    long c;
+    private boolean firstCall = true;
+//    private long currentBit;
+//    final static long max = 1_000_000;
 
-    public LCG (int x0, int a, int modulo, int c) throws Exception {
+    public LCG (long x0, long a, long modulo, long c) throws Exception {
         if (modulo <= 0)
             throw new Exception("Modulo must be greater than 0!");
         if (0 >= a || a >= modulo)
@@ -21,7 +28,141 @@ public class LCG {
         this.a = a;
         this.modulo = modulo;
         this.c = c;
+        values = new ArrayList<>();
+        values.add(x0);
     }
+
+    public LCG () {
+        this.x0 = (new Random().nextLong());
+        this.a = 672257317069504227L;
+        this.modulo = 9223372036854775783L;
+        this.c = 7382843889490547368L;
+        values = new ArrayList<>();
+        values.add(x0);
+    }
+
+    @Override
+    long nextValue() {
+        if (firstCall) {
+            firstCall = false;
+        } else {
+            values.add( (this.a * values.get(values.size() - 1) + this.c) % modulo );
+//            this.currentBit = (this.a * currentBit + this.c) % modulo;
+        }
+        return values.get(values.size() - 1);
+    }
+
+    @Override
+    boolean isGenerated(List<Long> list) {
+
+//        long inc = LCG.getUnknownIncrement(list);
+
+
+
+        return false;
+    }
+
+    @Override
+    List<Long> generateList(int size) {
+        return null;
+    }
+
+
+    private static long gcdThing(long a, long b) {
+        BigInteger b1 = BigInteger.valueOf(a);
+        BigInteger b2 = BigInteger.valueOf(b);
+        BigInteger gcd = b1.gcd(b2);
+        return gcd.longValue();
+    }
+
+    MockTuple getUnknownIncrement(List<Long> list, MockTuple tuple) throws Exception {
+        if (list.size() < 2) throw new Exception("Given too less data generated. I need at least 2 elements!");
+
+//        s1 = s0*m + c   (mod n)
+//        c  = s1 - s0*m  (mod n)
+        tuple.c = (list.get(1) - list.get(0) * tuple.a) % tuple.modulo;
+        return tuple;
+    }
+
+    MockTuple getUnknownMultiplier(List<Long> list, MockTuple tuple) throws Exception {
+        if (list.size() < 3) throw new Exception("Given too less data generated. I need at least 3 elements!");
+
+        long invMod = this.modInv(list.get(1) - list.get(0), tuple.modulo);
+
+        if (invMod == -1) {
+            throw new Exception("Not found inverted modulo!");
+        }
+        tuple.a = (list.get(2) - list.get(1)) * invMod % tuple.modulo;
+
+        return this.getUnknownIncrement(list, tuple);
+    }
+
+
+    EGCDTuple getEGCD(long a, long b) {
+        EGCDTuple egcd = new EGCDTuple();
+        if (a == 0) {
+            egcd.g = b;
+            egcd.x = 0;
+            egcd.y = 1;
+            return egcd;
+        }
+
+        egcd = getEGCD(b % a, a);
+        EGCDTuple egcd1 = new EGCDTuple();
+        egcd1.g = egcd.g;
+        egcd1.x = egcd.y - b/a* egcd.x;
+        egcd1.y = egcd.x;
+        return egcd1;
+    }
+
+    long modInv(long b, long n) {
+        EGCDTuple egcd = this.getEGCD(b, n);
+
+        if (egcd.g == 1)
+            return egcd.x % n;
+        else
+            return -1;
+    }
+
+
+//    def egcd(a, b):
+//            if a == 0:
+//            return (b, 0, 1)
+//            else:
+//    g, x, y = egcd(b % a, a)
+//        return (g, y - (b // a) * x, x)
+//
+//    def modinv(b, n):
+//    g, x, _ = egcd(b, n)
+//    if g == 1:
+//            return x % n
+
+    class EGCDTuple {
+        long g;
+        long x;
+        long y;
+    }
+
+    class MockTuple {
+        long x0 = -1;
+        long a;
+        long modulo;
+        long c;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public String generateString(int n) throws Exception {
         if (n <= 0)
@@ -32,7 +173,7 @@ public class LCG {
 
 //        String str = "" + x0;
 
-        int xn = this.x0;
+        long xn = this.x0;
         for (int i=1; i<n; i++) {
             xn = (this.a * xn + this.c) % modulo;
             s.append(xn);
@@ -41,6 +182,20 @@ public class LCG {
         return s.toString();
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    Below is useless code.
 
     private static boolean areZeros (String str, int index){
         int[] numbers = Arrays.stream(str.split("_")).mapToInt(Integer::parseInt).toArray();
@@ -200,7 +355,6 @@ public class LCG {
         }
         return (eqClass == EquationClass.CORRECT);
     }
-
 }
 
 enum EquationClass {

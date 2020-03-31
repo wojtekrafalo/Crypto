@@ -2,6 +2,8 @@ import Lab1.GLIBC;
 import Lab1.LCG;
 import Lab1.SolutionClass;
 
+import java.util.Random;
+
 /**
  * Class used to test current Lab list. Each package describes specific list and has its own Main class.
  */
