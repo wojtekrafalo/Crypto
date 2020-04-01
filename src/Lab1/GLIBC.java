@@ -1,29 +1,23 @@
 package Lab1;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class GLIBC extends Generator {
-    private int MAX = 1_000_000;
-    private long seed;
-    //            2^31 = 2147483647 - 1
-    private static final long modulo = 2147483647;
-    private static final long multiplier = 16807;
+    private static final BigInteger modulo = new BigInteger("2147483647");
+    private static final BigInteger multiplier = new BigInteger("16807");
     private static final int firstBound = 31;
     private static final int smallDiff = 3;
     private static final int secondBound = 34;
     private static final int thirdBound = 344;
-    private static final long maxSeed = 100000;
-    private static final long maxSeedToConstructor = 1_000_000_000;
+//    private long seed;
 
     /**
-     * @param MAX  Elements in output string.
-     * @param seed An seed used to generator. It is used to distinguish outputs.
+     * @param seed An seed used to generator. It makes, that outputs differ.
      * @throws Exception When arguments are negative.
      */
-    public GLIBC(int MAX, long seed) throws Exception {
-        if (MAX < thirdBound) throw new Exception("String should be longer.");
+    public GLIBC(long seed) throws Exception {
         if (seed < 0) throw new Exception("String of negative seed cannot be generated.");
-        this.MAX = MAX;
         this.seed = seed;
     }
 
@@ -35,53 +29,70 @@ public class GLIBC extends Generator {
 //        this.seed = (new Random().nextLong());
         values = new LinkedList<>();
 
-        values.add(0, this.seed);
+        values.add(0, new BigInteger(String.valueOf(this.seed)));
 
         for (int i = 1; i < firstBound; i++) {
-            values.add(i, multiplier * values.get(i - 1) % modulo);
+            values.add(i, multiplier.multiply(values.get(i - 1)).mod(modulo));
         }
 
         for (int i = firstBound; i < secondBound; i++) {
-            Long ln = values.get(i - firstBound);
-            values.add(i, ln);
+            BigInteger bi = new BigInteger(String.valueOf(values.get(i - firstBound)));
+//            Long bi = values.get(i - firstBound);
+            values.add(i, bi);
         }
 
         for (int i = secondBound; i < thirdBound; i++) {
-            Long ln = values.get(i - firstBound) + values.get(i - smallDiff);
-            values.add(i, ln);
+            BigInteger bi = new BigInteger(String.valueOf(values.get(i - firstBound).add(values.get(i - smallDiff))));
+//            Long bi = values.get(i - firstBound) + values.get(i - smallDiff);
+            values.add(i, bi);
         }
     }
 
     @Override
-    long nextValue() {
+    public BigInteger nextValue() {
         int size = values.size();
-        Long l1 = values.get(size - firstBound);
-        Long l2 = values.get(size - smallDiff);
-        long l3 = l1 - l2;
-        values.add(size, l3);
-        return (l3 >> 1);
+        BigInteger b1 = values.get(size - firstBound);
+        BigInteger b2 = values.get(size - smallDiff);
+        BigInteger b3 = b1.add(b2);
+        values.add(size, b3);
+
+//        return (b3 >> 1);
+        return (b3.shiftRight(1));
     }
 
     @Override
-    boolean isGenerated(List<Long> list) throws Exception {
+    public boolean isGenerated(List<BigInteger> list) throws Exception {
 
         int size = list.size();
         if (size < firstBound) throw new Exception("Given generated data set is too small.");
         int iter = firstBound;
+
         while (iter < size) {
 
-            long lg0 = list.get(iter - smallDiff) * 2;
-            long lg1 = list.get(iter - smallDiff) * 2 + 1;
+            BigInteger lg0 = list.get(iter - smallDiff).multiply(new BigInteger(String.valueOf(2)));
+            BigInteger lg1 = list.get(iter - smallDiff).multiply(new BigInteger(String.valueOf(2))).add(new BigInteger(String.valueOf(1)));
 
-            long ls0 = list.get(iter - firstBound) * 2;
-            long ls1 = list.get(iter - firstBound) * 2 + 1;
+            BigInteger ls0 = list.get(iter - firstBound).multiply(new BigInteger(String.valueOf(2)));
+            BigInteger ls1 = list.get(iter - firstBound).multiply(new BigInteger(String.valueOf(2))).add(new BigInteger(String.valueOf(1)));
 
-            long curr = list.get(iter);
+            BigInteger curr = list.get(iter);
 
-            boolean check1 = (curr == ((lg0 + ls0) >> 1));
-            boolean check2 = (curr == ((lg0 + ls1) >> 1));
-            boolean check3 = (curr == ((lg1 + ls0) >> 1));
-            boolean check4 = (curr == ((lg1 + ls1) >> 1));
+//            boolean check1 = (curr == ((lg0 + ls0) >> 1));
+//            boolean check2 = (curr == ((lg0 + ls1) >> 1));
+//            boolean check3 = (curr == ((lg1 + ls0) >> 1));
+//            boolean check4 = (curr == ((lg1 + ls1) >> 1));
+
+            BigInteger res1 = lg0.add(ls0).shiftRight(1);
+            boolean check1 = (curr.equals(res1));
+
+            BigInteger res2 = lg0.add(ls1).shiftRight(1);
+            boolean check2 = (curr.equals(res2));
+
+            BigInteger res3 = lg1.add(ls0).shiftRight(1);
+            boolean check3 = (curr.equals(res3));
+
+            BigInteger res4 = lg1.add(ls1).shiftRight(1);
+            boolean check4 = (curr.equals(res4));
 
             boolean any = check1 || check2 || check3 || check4;
             if (!any)
@@ -90,100 +101,5 @@ public class GLIBC extends Generator {
         }
 
         return true;
-    }
-
-    @Override
-    List<Long> generateList(int size) {
-        LinkedList<Long> list = new LinkedList<>();
-        for (int i = 0; i < size; i++) {
-            list.add(this.nextValue());
-        }
-        return list;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-//    below is trash:
-
-    /**
-     * @return String generated by the GLIBC's random method with parameters given to the constructor.
-     */
-    public String generateString() {
-        StringBuilder output = new StringBuilder();
-        long[] r = new long[this.MAX];
-
-        r[0] = this.seed;
-        for (int i = 1; i < firstBound; i++) {
-            r[i] = (multiplier * r[i - 1]) % modulo;
-            if (r[i] < 0) {
-                r[i] += modulo;
-            }
-        }
-        System.arraycopy(r, 0, r, firstBound, secondBound - firstBound);
-
-        for (int i = secondBound; i < thirdBound; i++) {
-            r[i] = r[i - firstBound] + r[i - smallDiff];
-        }
-
-        for (int i = thirdBound; i < this.MAX; i++) {
-            r[i] = r[i - firstBound] + r[i - smallDiff];
-            output.append(r[i] >> 1);
-            output.append("_");
-        }
-        return output.toString();
-    }
-
-    /**
-     * Distinguishes if given string was created by the GLIBC generator.
-     *
-     * @param str String to perform operation.
-     * @return True if string can be generated by the GLIBC method.
-     */
-    public static boolean isGLIBC(String str) {
-        int[] numbers = Arrays.stream(str.split("_")).mapToInt(Integer::parseInt).toArray();
-        int s = 1;
-        int Limit = numbers.length + GLIBC.thirdBound;
-
-        while (s < GLIBC.maxSeed) {
-
-            StringBuilder STR = new StringBuilder();
-            long[] ccc = new long[Limit];
-
-            ccc[0] = s;
-            for (int i = 1; i < GLIBC.firstBound; i++) {
-                ccc[i] = (GLIBC.multiplier * ccc[i - 1]) % GLIBC.modulo;
-                if (ccc[i] < 0) {
-                    ccc[i] += GLIBC.modulo;
-                }
-            }
-
-            for (int i = GLIBC.firstBound; i < GLIBC.secondBound; i++) {
-                ccc[i] = ccc[i - GLIBC.firstBound];
-            }
-
-            for (int i = GLIBC.secondBound; i < GLIBC.thirdBound; i++) {
-                ccc[i] = ccc[i - GLIBC.firstBound] + ccc[i - smallDiff];
-            }
-
-            for (int i = GLIBC.thirdBound; i < Limit; i++) {
-                ccc[i] = ccc[i - GLIBC.firstBound] + ccc[i - smallDiff];
-                STR.append(ccc[i] >> 1);
-                STR.append("_");
-            }
-            if (STR.toString().equals(str))
-                return true;
-
-            s++;
-        }
-        return false;
     }
 }

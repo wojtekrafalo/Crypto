@@ -1,98 +1,130 @@
 package Lab1;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
-public class LCG extends Generator{
-    long x0;
-    long a;
-    long modulo;
-    long c;
+public class LCG extends Generator {
+    //    x0 == seed
+    private long a;
+    private long modulo;
+    private long c;
     private boolean firstCall = true;
 //    private long currentBit;
 //    final static long max = 1_000_000;
 
-    public LCG (long x0, long a, long modulo, long c) throws Exception {
+    public LCG(long seed, long a, long modulo, long c) throws Exception {
         if (modulo <= 0)
             throw new Exception("Modulo must be greater than 0!");
         if (0 >= a || a >= modulo)
             throw new Exception("Multiplier must be in range (0, m)!");
         if (0 > c || c >= modulo)
             throw new Exception("Increment must be in range [0, m)!");
-        if (0 > x0 || x0 >= modulo)
+        if (0 > seed || seed >= modulo)
             throw new Exception("First argument must be in range [0, m)!");
-        this.x0 = x0;
+        this.seed = seed;
         this.a = a;
         this.modulo = modulo;
         this.c = c;
         values = new ArrayList<>();
-        values.add(x0);
+        values.add(new BigInteger(String.valueOf(seed)));
     }
 
-    public LCG () {
-        this.x0 = (new Random().nextLong());
+    public LCG() {
+        this.seed = new Date().getTime();
+//        this.seed = (new Random().nextLong());
+
         this.a = 672257317069504227L;
         this.modulo = 9223372036854775783L;
         this.c = 7382843889490547368L;
         values = new ArrayList<>();
-        values.add(x0);
+        values.add(new BigInteger(String.valueOf(seed)));
     }
 
     @Override
-    long nextValue() {
+    public BigInteger nextValue() {
         if (firstCall) {
             firstCall = false;
         } else {
-            values.add( (this.a * values.get(values.size() - 1) + this.c) % modulo );
+            BigInteger valA = new BigInteger(String.valueOf(this.a));
+            BigInteger val1 = values.get(values.size() - 1);
+            BigInteger valC = new BigInteger(String.valueOf(this.c));
+            BigInteger valM = new BigInteger(String.valueOf(this.modulo));
+            BigInteger val = valA.multiply(val1).add(valC).mod(valM);
+//            BigInteger val = new BigInteger(String.valueOf((this.a * values.get(values.size() - 1).longValue() + this.c) % modulo));
+            values.add(val);
 //            this.currentBit = (this.a * currentBit + this.c) % modulo;
         }
         return values.get(values.size() - 1);
     }
 
     @Override
-    boolean isGenerated(List<Long> list) {
+    public boolean isGenerated(List<BigInteger> list) throws Exception {
+        MockTuple tuple = new MockTuple();
 
-//        long inc = LCG.getUnknownIncrement(list);
+        List<BigInteger> ts = new LinkedList<>();
+
+        for (int i = 1; i < list.size(); i++) {
+            ts.add(new BigInteger(String.valueOf(list.get(i).subtract(list.get(i - 1)))));
+        }
 
 
+        List<BigInteger> zeroes = new LinkedList<>();
+        for (int i = 2; i < ts.size(); i++) {
+            BigInteger s1 = ts.get(i).multiply(ts.get(i - 2));
+            BigInteger s2 = ts.get(i - 1).multiply(ts.get(i - 1));
+            zeroes.add(new BigInteger(String.valueOf(s1.subtract(s2))));
+        }
 
-        return false;
+        tuple.modulo = getGCD(zeroes).longValue();
+
+        tuple = this.getUnknownMultiplier(list, tuple);
+
+        return true;
     }
 
-    @Override
-    List<Long> generateList(int size) {
-        return null;
+//    def crack_unknown_modulus(states):
+//      diffs = [s1 - s0 for s0, s1 in zip(states, states[1:])]
+//      zeroes = [t2*t0 - t1*t1 for t0, t1, t2 in zip(diffs, diffs[1:], diffs[2:])]
+//      modulus = abs(reduce(gcd, zeroes))
+//      return crack_unknown_multiplier(states, modulus)
+
+
+    private static BigInteger getGCD(List<BigInteger> list) throws Exception {
+        int size = list.size();
+        if (size == 1) throw new Exception("Try too small!");
+
+        BigInteger gcd = list.get(0);
+
+        for (int i=1; i<size; i++) {
+            gcd = gcd.gcd(list.get(i));
+        }
+        return gcd;
     }
 
-
-    private static long gcdThing(long a, long b) {
+    private static BigInteger getGCD(long a, long b) {
         BigInteger b1 = BigInteger.valueOf(a);
         BigInteger b2 = BigInteger.valueOf(b);
-        BigInteger gcd = b1.gcd(b2);
-        return gcd.longValue();
+        return b1.gcd(b2);
     }
 
-    MockTuple getUnknownIncrement(List<Long> list, MockTuple tuple) throws Exception {
+    MockTuple getUnknownIncrement(List<BigInteger> list, MockTuple tuple) throws Exception {
         if (list.size() < 2) throw new Exception("Given too less data generated. I need at least 2 elements!");
 
 //        s1 = s0*m + c   (mod n)
 //        c  = s1 - s0*m  (mod n)
-        tuple.c = (list.get(1) - list.get(0) * tuple.a) % tuple.modulo;
+        tuple.c = (list.get(1).longValue() - list.get(0).longValue() * tuple.a) % tuple.modulo;
         return tuple;
     }
 
-    MockTuple getUnknownMultiplier(List<Long> list, MockTuple tuple) throws Exception {
+    MockTuple getUnknownMultiplier(List<BigInteger> list, MockTuple tuple) throws Exception {
         if (list.size() < 3) throw new Exception("Given too less data generated. I need at least 3 elements!");
 
-        long invMod = this.modInv(list.get(1) - list.get(0), tuple.modulo);
+        long invMod = this.modInv(list.get(1).longValue() - list.get(0).longValue(), tuple.modulo);
 
         if (invMod == -1) {
             throw new Exception("Not found inverted modulo!");
         }
-        tuple.a = (list.get(2) - list.get(1)) * invMod % tuple.modulo;
+        tuple.a = (list.get(2).longValue() - list.get(1).longValue()) * invMod % tuple.modulo;
 
         return this.getUnknownIncrement(list, tuple);
     }
@@ -110,7 +142,7 @@ public class LCG extends Generator{
         egcd = getEGCD(b % a, a);
         EGCDTuple egcd1 = new EGCDTuple();
         egcd1.g = egcd.g;
-        egcd1.x = egcd.y - b/a* egcd.x;
+        egcd1.x = egcd.y - b / a * egcd.x;
         egcd1.y = egcd.x;
         return egcd1;
     }
@@ -164,23 +196,6 @@ public class LCG extends Generator{
 
 
 
-    public String generateString(int n) throws Exception {
-        if (n <= 0)
-            throw new Exception("String should be at least one letter long!");
-        StringBuilder s = new StringBuilder();
-        s.append(x0);
-        s.append("_");
-
-//        String str = "" + x0;
-
-        long xn = this.x0;
-        for (int i=1; i<n; i++) {
-            xn = (this.a * xn + this.c) % modulo;
-            s.append(xn);
-            s.append("_");
-        }
-        return s.toString();
-    }
 
 
 
@@ -190,37 +205,7 @@ public class LCG extends Generator{
 
 
 
-
-
-
-
-
-//    Below is useless code.
-
-    private static boolean areZeros (String str, int index){
-        int[] numbers = Arrays.stream(str.split("_")).mapToInt(Integer::parseInt).toArray();
-
-        int iter = index;
-        while (iter < numbers.length) {
-            if (numbers[iter] != 0)
-                return false;
-            iter++;
-        }
-        return true;
-    }
-
-    public static boolean isLCB(String str, SolutionClass sC) throws Exception{
-        switch (sC) {
-            case Cycle:
-                return LCG.isLCG1(str);
-            case Equation:
-                return LCG.isLCG2(str);
-            default:
-                return false;
-        }
-    }
-
-    /**
+    /*
      * Following methods looks for a cycle in the string.
      * It can be proved, than to any cycle can be assigned at least one set of arguments to the Lab1.LCG generator,
      * used to generate such string.
@@ -231,6 +216,7 @@ public class LCG extends Generator{
      * @return True if given string is generated by the Lab1.LCG.
      * @throws Exception if string is empty.
      */
+    /*
     private static boolean isLCG1(String str) throws Exception {
         int[] numbers = Arrays.stream(str.split("_")).mapToInt(Integer::parseInt).toArray();
         int size = numbers.length;
@@ -262,103 +248,6 @@ public class LCG extends Generator{
             }
         }
         return false;
-    }
+    }*/
 
-    /**
-     * This solution tried to find a tuple of variables: (x0, a, c, modulo) for given string.
-     * But it doesn't work yet.
-     * Three first elements of the input string are enough. After that we check the rest of the string.
-     * To find such solution, we have to solve a set of equations.
-     * @param str String to be checked. Elements of an array must be separated by '_' sign.
-     * @return True if given string is generated by the Lab1.LCG.
-     * @throws Exception if string is empty.
-     */
-    private static boolean isLCG2(String str) throws Exception {
-        if (str.length() <= 3)
-            throw new Exception("Given string is too short!");
-        int[] numbers = Arrays.stream(str.split("_")).mapToInt(Integer::parseInt).toArray();
-
-//        final int MAX = 1000;
-        int MAX = -1;
-        for (int num : numbers) {
-            if (num > MAX) MAX = num;
-        }
-        int i=0, j=0, k=0, iterator=0;
-
-        EquationClass eqClass = EquationClass.CONTRADICTORY;
-
-//        [ a, c, m ]
-        int [][] eqSolution = new int[MAX][3];
-        int eqIterator = 0;
-
-        int[] y = {numbers[0], numbers[1], numbers[2]};
-        int[] w = {numbers[1], numbers[2], numbers[3]};
-
-        while (iterator < MAX) {
-            while (i < MAX) {
-                while (j < MAX) {
-                    while (k < MAX) {
-
-                        int la = (-y[0]+y[1]) * (i-k) - (-y[0]+y[2]) * (i-j);
-                        int ma = (w[0]+w[1]) * (i-k) - (w[0]-w[2]) * (i-j);
-
-                        if (la == 0 && ma==0) eqClass = EquationClass.IDENTITY;
-                        else if (la==0 && ma!=0) eqClass = EquationClass.CONTRADICTORY;
-                        else if (!((la<0 && ma<0) || (la>0 && ma>0))) eqClass = EquationClass.CONTRADICTORY;
-                        else if (la/ma * ma != la) eqClass = EquationClass.CONTRADICTORY;
-                        else {
-                            int a = la/ma;
-                            int lm = w[1]-w[0] + y[0]*a - y[1]*a;
-                            int mm = i-j;
-
-                            if (lm == 0 && mm==0) eqClass = EquationClass.IDENTITY;
-                            else if (lm==0 && mm!=0) eqClass = EquationClass.CONTRADICTORY;
-                            else if (!((lm<0 && mm<0) || (lm>0 && mm>0))) eqClass = EquationClass.CONTRADICTORY;
-                            else if (lm/mm * mm != lm) eqClass = EquationClass.CONTRADICTORY;
-                            else {
-                                int m = lm/mm;
-                                int c = w[0] - y[0] + i*m;
-
-                                if ((0 >= a || a >= m) || (0 > c || c >= m)) eqClass = EquationClass.CONTRADICTORY;
-                                else {
-//                                        [ a, c, m ]
-                                    eqSolution[eqIterator][0] = a;
-                                    eqSolution[eqIterator][0] = c;
-                                    eqSolution[eqIterator][0] = m;
-                                    eqClass = EquationClass.CORRECT;
-
-                                    for (int l=1; l<numbers.length; l++) {
-                                        if (numbers[l] != (a * numbers[l - 1] + c) % m) {
-                                            throw new Exception("Solution doesn't match next elements!");
-                                        }
-                                    }
-
-                                    eqIterator++;
-                                }
-                            }
-                        }
-                        if (eqClass == EquationClass.CORRECT)
-                            break;
-                        k++;
-                    }
-                    if (eqClass == EquationClass.CORRECT)
-                        break;
-                    j++;
-                }
-                if (eqClass == EquationClass.CORRECT)
-                    break;
-                i++;
-            }
-            if (eqClass == EquationClass.CORRECT)
-                break;
-            iterator++;
-        }
-        return (eqClass == EquationClass.CORRECT);
-    }
-}
-
-enum EquationClass {
-    IDENTITY,
-    CONTRADICTORY,
-    CORRECT
 }
