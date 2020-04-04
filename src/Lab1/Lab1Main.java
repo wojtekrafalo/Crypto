@@ -32,23 +32,18 @@ public class Lab1Main {
         Generator gen;
         Random random = new Random();
         int rand = random.nextInt();
-        DistinguisherResult generatorCreated;
+        String what;
+
         if (rand % 2 >= 0) {
             gen = new LCG();
-            generatorCreated = DistinguisherResult.LCG;
+            what = "LCG";
         } else {
             gen = new GLIBC();
-            generatorCreated = DistinguisherResult.GLIBC;
+            what = "GLIBC";
         }
 
-        String what;
-        if (generatorCreated == DistinguisherResult.LCG)
-            what = "LCG";
-        else
-            what = "GLIBC";
-
         DistinguisherResult generatedDistinguished = Generator.whatGenerator(gen);
-        String dist = "none of the generators: LCG or GLIBC.";
+        String dist = "";
         switch (generatedDistinguished) {
             case LCG:
                 dist = "LCG.";
@@ -57,6 +52,7 @@ public class Lab1Main {
                 dist = "GLIBC.";
                 break;
             case NONE:
+                dist = "none of the generators: LCG or GLIBC.";
                 break;
             case BOTH:
                 dist = "both, LCG and GLIBC.";
@@ -82,9 +78,9 @@ public class Lab1Main {
         for (int i = 0; i < 20; i++) {
             list2.add(new BigInteger("1"));
             list2.add(new BigInteger("3"));
-            list2.add(new BigInteger("-2"));
+            list2.add(new BigInteger("2"));
             list2.add(new BigInteger("4"));
-            list2.add(new BigInteger("-7"));
+            list2.add(new BigInteger("7"));
             list2.add(new BigInteger("8"));
         }
 

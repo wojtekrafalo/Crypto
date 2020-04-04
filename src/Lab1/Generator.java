@@ -53,7 +53,7 @@ public abstract class Generator {
 
         LCG distinguisherLCG = new LCG();
         boolean isGeneratedLCG = distinguisherLCG.isGenerated(list);
-        LCG distinguisherGLIBC = new LCG();
+        GLIBC distinguisherGLIBC = new GLIBC();
         boolean isGeneratedGLIBC = distinguisherGLIBC.isGenerated(list);
 
         DistinguisherResult result = DistinguisherResult.NONE;
