@@ -24,7 +24,7 @@ public class FileEncrypterDecrypterUnitTest {
     private String encryptAndDecrypt (String content, String path, String mode) throws NoSuchAlgorithmException, NoSuchPaddingException, IOException, InvalidKeyException, InvalidAlgorithmParameterException {
         SecretKey secretKey = KeyGenerator.getInstance("AES").generateKey();
 
-        FileEncrypterDecrypter fileEncrypterDecrypter = new FileEncrypterDecrypter(secretKey, mode);
+        FileEncrypterDecrypter fileEncrypterDecrypter = new FileEncrypterDecrypter(mode, "keyStorePath");
         fileEncrypterDecrypter.encryptString(content, path);
 
         return fileEncrypterDecrypter.decrypt(path);
@@ -33,7 +33,7 @@ public class FileEncrypterDecrypterUnitTest {
     private String encryptFromFileAndDecrypt (String inputPath, String outputPath, String mode) throws NoSuchAlgorithmException, NoSuchPaddingException, IOException, InvalidKeyException, InvalidAlgorithmParameterException {
         SecretKey secretKey = KeyGenerator.getInstance("AES").generateKey();
 
-        FileEncrypterDecrypter fileEncrypterDecrypter = new FileEncrypterDecrypter(secretKey, mode);
+        FileEncrypterDecrypter fileEncrypterDecrypter = new FileEncrypterDecrypter(mode, "keyStorePath");
         fileEncrypterDecrypter.encryptFile(inputPath, outputPath);
 
         return fileEncrypterDecrypter.decrypt(outputPath);
@@ -99,11 +99,24 @@ public class FileEncrypterDecrypterUnitTest {
     }
 
     @Test
-    public void givenFilename_whenEncryptingIntoFile_andDecryptingFileAgain_thenOriginalStringIsReturned_CBC() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IOException, InvalidAlgorithmParameterException {
+    public void givenFile_Encrypting_DecryptingAgain_thenOriginalFileIsReturned_CBC() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IOException, InvalidAlgorithmParameterException {
         String inputPath = "C:\\myTrash\\pwr\\Crypto\\Crypto1\\src\\test\\files\\message.txt";
         String outputPath = "baz.enc";
         String mode = "CBC";
-        String inputContent = Files.readString(Paths.get(inputPath));
+
+//        String inputContent = Files.readString(Paths.get(inputPath));
+        FileInputStream inputStream = new FileInputStream(inputPath);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+        String inputContent = sb.toString();
+
+
 
         String decryptedContent = encryptFromFileAndDecrypt(inputPath, outputPath, mode);
         assertThat(decryptedContent, is(inputContent));

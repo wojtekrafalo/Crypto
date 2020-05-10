@@ -3,8 +3,6 @@ package Lab2;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -16,7 +14,7 @@ public class FileEncrypterDecrypter {
     private Cipher cipher;
     private ArrayList<String> dictionary;
 
-    public FileEncrypterDecrypter(SecretKey secretKey, String cipher) throws NoSuchPaddingException, NoSuchAlgorithmException {
+    public FileEncrypterDecrypter(String cipher, String keyStorePath, SecretKey secretKey) throws NoSuchPaddingException, NoSuchAlgorithmException {
         this.createDictionary();
 
         if (this.dictionary.contains(cipher)) {
@@ -24,6 +22,10 @@ public class FileEncrypterDecrypter {
             String tmpCipher = "AES/" + cipher + "/PKCS5Padding";
             this.cipher = Cipher.getInstance(tmpCipher);
         } else throw new NoSuchAlgorithmException(cipher);
+    }
+
+    public FileEncrypterDecrypter (String cipher, String keystorePath) throws NoSuchAlgorithmException, NoSuchPaddingException {
+        this(cipher, keystorePath, KeyGenerator.getInstance("AES").generateKey());
     }
 
     private void createDictionary() {
@@ -52,7 +54,17 @@ public class FileEncrypterDecrypter {
     public void encryptFile(String inputPath, String outputPath) throws InvalidKeyException, IOException {
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] iv = cipher.getIV();
-        String content = Files.readString(Paths.get(inputPath));
+//        String content = Files.readString(Paths.get(inputPath));
+        FileInputStream inputStream = new FileInputStream(inputPath);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+        String content = sb.toString();
 
         try (
                 FileOutputStream fileOut = new FileOutputStream(outputPath);
@@ -61,14 +73,13 @@ public class FileEncrypterDecrypter {
             fileOut.write(iv);
             cipherOut.write(content.getBytes());
         }
-
     }
 
-    public String decrypt(String fileName) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException {
+    public String decrypt(String inputPath) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException {
 
         String content;
 
-        try (FileInputStream fileIn = new FileInputStream(fileName)) {
+        try (FileInputStream fileIn = new FileInputStream(inputPath)) {
             byte[] fileIv = new byte[16];
             fileIn.read(fileIv);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(fileIv));
