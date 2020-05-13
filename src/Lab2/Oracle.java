@@ -19,24 +19,33 @@ public class Oracle {
         this.fileEncrypterDecrypter = fileEncrypterDecrypter;
     }
 
-    public List<String> useOracle(List<String> messages) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, InvalidKeyException, IOException {
+    public List<String> useOracle(List<String> messages, boolean isConsecutive) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, InvalidKeyException, IOException {
 
         List<String> outputs = new ArrayList<>(messages.size());
         for (String message : messages) {
             String out = "out_" + message;
             outputs.add(out);
-            fileEncrypterDecrypter.encryptFile(message, out);
+            if (isConsecutive)
+                fileEncrypterDecrypter.encryptFileWithConsecutiveIV(message, out);
+            else
+                fileEncrypterDecrypter.encryptFile(message, out);
         }
         return outputs;
     }
 
-    public void useChallenge(String m0, String m1, String outputPath) throws IOException, InvalidKeyException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-        this.generatedBit = generator.nextInt(2);
-        if (this.generatedBit == 0) {
+    public void useChallenge(String m0, String m1, String outputPath, boolean isConsecutive) throws IOException, InvalidKeyException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+//        this.generatedBit = generator.nextInt(2);
+        this.generatedBit = 0;
+
+        if (this.generatedBit == 0 && !isConsecutive)
             fileEncrypterDecrypter.encryptFile(m0, outputPath);
-        } else {
+        if (this.generatedBit == 0 && isConsecutive)
+            fileEncrypterDecrypter.encryptFileWithConsecutiveIV(m0, outputPath);
+
+        if (this.generatedBit == 1 && !isConsecutive)
             fileEncrypterDecrypter.encryptFile(m1, outputPath);
-        }
+        if (this.generatedBit == 1 && isConsecutive)
+            fileEncrypterDecrypter.encryptFileWithConsecutiveIV(m1, outputPath);
     }
 
     public boolean guessChallenge(int bit) {
